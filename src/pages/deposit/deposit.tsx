@@ -4,8 +4,16 @@ import { Check, CheckCheckIcon, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Th } from "../../components/table-item";
 
+interface DepositType {
+  _id: string;
+  amount: number;
+  transitionId: string;
+  method: string;
+  status: "pending" | "declined" | "approved";
+}
+
 function Deposits() {
-  const [deposits, setDeposits] = useState([]);
+  const [deposits, setDeposits] = useState<DepositType[]>([]);
 
   useEffect(() => {
     const getDeposits = async () => {
@@ -18,6 +26,8 @@ function Deposits() {
           },
         }
       );
+
+      // console.log(response);
 
       setDeposits(response.data.data.deposits);
     };
@@ -46,8 +56,8 @@ function Deposits() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {deposits?.map((withdraw) => (
-                <Tr withdraw={withdraw} key={withdraw._id} />
+              {deposits?.map((deposit) => (
+                <Tr deposit={deposit} key={deposit._id} />
               ))}
             </tbody>
           </table>{" "}
@@ -59,17 +69,17 @@ function Deposits() {
 
 export default Deposits;
 
-const Tr = ({ withdraw }) => {
-  if (!withdraw) {
-    return;
+const Tr = ({ deposit }: { deposit: DepositType }) => {
+  if (!deposit) {
+    return null;
   }
 
-  const handleApprove = async (userId, withdrawId) => {
+  const handleApprove = async (userId: string, depositId: string) => {
     const response = await axios.patch(
       `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/approve`,
       {
         userId,
-        withdrawId,
+        depositId,
       },
       {
         headers: {
@@ -78,55 +88,56 @@ const Tr = ({ withdraw }) => {
         },
       }
     );
+    console.log(response.data);
   };
 
   return (
     <tr
-      key={withdraw._id}
+      key={deposit._id}
       className="hover:bg-gray-50 transition duration-150 ease-in-out"
     >
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900">
-              {withdraw.amount}
+              {deposit.amount}
             </div>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{withdraw.transitionId}</div>
+        <div className="text-sm text-gray-900">{deposit.transitionId}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{withdraw.method}</div>
+        <div className="text-sm text-gray-900">{deposit.method}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">{withdraw.status}</td>
+      <td className="px-6 py-4 whitespace-nowrap">{deposit.status}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        {withdraw.status === "pending" && (
+        {deposit.status === "pending" && (
           <div className="flex gap-6">
-            <button className="text-green-500 text-xl cursor-pointer ">
+            <button
+              className="text-green-500 text-xl cursor-pointer"
+              onClick={() => handleApprove("USER_ID", deposit._id)}
+            >
               <Check size={22} />
             </button>
-            {/* <button className="text-red-500 text-xl cursor-pointer ">
-              <XIcon size={22} />
-            </button> */}
           </div>
         )}
 
-        {withdraw.status === "approved" && (
+        {deposit.status === "approved" && (
           <div className="flex gap-6">
-            <button disabled className="text-green-800 text-xl  ">
+            <button disabled className="text-green-800 text-xl">
               <CheckCheckIcon size={22} />
             </button>
-            <button className="text-red-500 text-xl cursor-pointer ">
+            <button className="text-red-500 text-xl cursor-pointer">
               <Trash size={18} />
             </button>
           </div>
         )}
 
-        {withdraw.status === "declined" && (
+        {deposit.status === "declined" && (
           <div className="flex gap-6">
-            <button className="text-red-500 text-xl cursor-pointer ">
+            <button className="text-red-500 text-xl cursor-pointer">
               <Trash size={18} />
             </button>
           </div>
@@ -135,5 +146,3 @@ const Tr = ({ withdraw }) => {
     </tr>
   );
 };
-
-// approve icon  <CheckCheckIcon />

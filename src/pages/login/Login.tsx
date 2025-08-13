@@ -32,18 +32,23 @@ export default function Login() {
   );
 }
 
+interface FormDataType {
+  email: string;
+  password: string;
+}
+
 function InputFields() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     email: "",
     password: "",
   });
 
-  const handleChangeData = (name, e) => {
+  const handleChangeData = (name: "sting", e: React.ChangeEvent) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmitLogin = async (e) => {
+  const handleSubmitLogin = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
     const loginResponse = await axios.post(

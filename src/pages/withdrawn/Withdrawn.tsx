@@ -4,8 +4,16 @@ import { Check, CheckCheckIcon, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Th } from "../../components/table-item";
 
+interface withdraw {
+  _id: string;
+  amount: number;
+  phone: string;
+  method: string;
+  status: "pending" | "approved" | "cancelled";
+}
+
 function Withdrawn() {
-  const [withdrawn, setWithdrawn] = useState([]);
+  const [withdrawn, setWithdrawn] = useState<withdraw[]>([]);
 
   useEffect(() => {
     const getWithdrawn = async () => {
@@ -56,26 +64,26 @@ function Withdrawn() {
 
 export default Withdrawn;
 
-const Tr = ({ withdraw }) => {
+const Tr = ({ withdraw }: { withdraw: withdraw }) => {
   if (!withdraw) {
     return;
   }
 
-  const handleApprove = async (userId, withdrawId) => {
-    const response = await axios.patch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/approve`,
-      {
-        userId,
-        withdrawId,
-      },
-      {
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  };
+  // const handleApprove = async (userId, withdrawId) => {
+  //   const response = await axios.patch(
+  //     `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/approve`,
+  //     {
+  //       userId,
+  //       withdrawId,
+  //     },
+  //     {
+  //       headers: {
+  //         Authorization: token,
+  //         "Content-Type": "application/json",
+  //       },
+  //     }
+  //   );
+  // };
 
   return (
     <tr

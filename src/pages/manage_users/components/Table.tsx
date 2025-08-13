@@ -1,12 +1,5 @@
 import { Th } from "../../../components/table-item";
-
-interface DataProps {
-  _id: string;
-  username: string;
-  email: string;
-  wallet: object;
-  createdAt: string;
-}
+import type { User } from "../ManageUsers";
 
 const tableColumns = [
   "Username",
@@ -16,7 +9,7 @@ const tableColumns = [
   "Created At",
 ];
 
-function Table({ users }: { data: DataProps[] }) {
+function Table({ users }: { data: User[] }) {
   return (
     <table className="min-w-full divide-y divide-gray-200">
       <thead className="bg-gray-50">
@@ -36,7 +29,7 @@ function Table({ users }: { data: DataProps[] }) {
 }
 export default Table;
 
-const Tr = ({ user }) => {
+const Tr = ({ user }: { user: User }) => {
   if (!user) {
     return;
   }

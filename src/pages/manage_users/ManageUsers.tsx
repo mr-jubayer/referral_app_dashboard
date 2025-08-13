@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import SearchBox from "./components/SearchBox";
 import Table from "./components/Table";
 
+export interface User {
+  _id: string;
+  username: string;
+  email: string;
+  wallet: object;
+  createdAt: string;
+}
+
 export default function ManageUsers() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const getUsers = async () => {

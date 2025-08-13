@@ -1,9 +1,19 @@
 import { token } from "@/constant";
 import axios from "axios";
-import { useEffect } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+
+interface Refer {
+  _id: string;
+  userId: string;
+  amount: number;
+  phone: string;
+  status: string;
+  method: string;
+}
 
 function ReferralTree() {
-  const [referralData, seReferralData] = useState([]);
+  const [referralData, seReferralData] = useState<Refer[]>([]);
   useEffect(() => {
     const getUsers = async () => {
       const response = await axios(
@@ -15,6 +25,9 @@ function ReferralTree() {
           },
         }
       );
+
+      console.log(response.data.data.referTree);
+
       seReferralData(response.data.data.referTree);
     };
 
@@ -39,12 +52,9 @@ function ReferralTree() {
 }
 export default ReferralTree;
 
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
-
 // Recursive component to render each node and its children
-const ReferralItem = ({ item, level = 0 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+const ReferralItem = ({ item, level = 0 }: { item: Refer; level: number }) => {
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   // Function to toggle the expanded state
   const toggleExpand = () => {
