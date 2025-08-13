@@ -4,13 +4,13 @@ import { Check, CheckCheckIcon, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Th } from "../../components/table-item";
 
-function Withdrawn() {
-  const [withdrawn, setWithdrawn] = useState([]);
+function Deposits() {
+  const [deposits, setDeposits] = useState([]);
 
   useEffect(() => {
-    const getWithdrawn = async () => {
+    const getDeposits = async () => {
       const response = await axios(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/review`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/review`,
         {
           headers: {
             Authorization: token,
@@ -18,17 +18,20 @@ function Withdrawn() {
           },
         }
       );
-      console.log(response);
 
-      setWithdrawn(response.data.data.withdrawn);
+      setDeposits(response.data.data.deposits);
     };
 
-    getWithdrawn();
+    getDeposits();
   }, []);
 
-  console.log(withdrawn);
-
-  const tableColumns = ["Amount", "Phone", "Method", "Status", "Actions"];
+  const tableColumns = [
+    "Amount",
+    "Transition Id",
+    "Method",
+    "Status",
+    "Actions",
+  ];
 
   return (
     <div className="min-h-screen  p-2">
@@ -43,7 +46,7 @@ function Withdrawn() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {withdrawn.map((withdraw) => (
+              {deposits?.map((withdraw) => (
                 <Tr withdraw={withdraw} key={withdraw._id} />
               ))}
             </tbody>
@@ -54,7 +57,7 @@ function Withdrawn() {
   );
 }
 
-export default Withdrawn;
+export default Deposits;
 
 const Tr = ({ withdraw }) => {
   if (!withdraw) {
@@ -63,7 +66,7 @@ const Tr = ({ withdraw }) => {
 
   const handleApprove = async (userId, withdrawId) => {
     const response = await axios.patch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/approve`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/approve`,
       {
         userId,
         withdrawId,
@@ -92,7 +95,7 @@ const Tr = ({ withdraw }) => {
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{withdraw.phone}</div>
+        <div className="text-sm text-gray-900">{withdraw.transitionId}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{withdraw.method}</div>
