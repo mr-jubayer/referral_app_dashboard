@@ -1,8 +1,11 @@
+import { Th } from "../../../components/table-item";
+
 interface DataProps {
   _id: string;
   username: string;
+  email: string;
   wallet: object;
-  cratedAt: Date;
+  createdAt: string;
 }
 
 const tableColumns = [
@@ -19,13 +22,13 @@ function Table({ users }: { data: DataProps[] }) {
       <thead className="bg-gray-50">
         <tr>
           {tableColumns.map((col) => {
-            return <Th label={col} />;
+            return <Th label={col} key={col} />;
           })}
         </tr>
       </thead>
       <tbody className="bg-white divide-y divide-gray-200">
         {users.map((user) => (
-          <Tr user={user} />
+          <Tr user={user} key={user._id} />
         ))}
       </tbody>
     </table>
@@ -34,7 +37,11 @@ function Table({ users }: { data: DataProps[] }) {
 export default Table;
 
 const Tr = ({ user }) => {
-  const createData = user.createdAt.slice(0, 10);
+  if (!user) {
+    return;
+  }
+
+  const createDate = user?.createdAt?.slice(0, 10);
   return (
     <tr
       key={user._id}
@@ -61,19 +68,8 @@ const Tr = ({ user }) => {
         {user.wallet.referralIncome}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        {createData}
+        {createDate}
       </td>
     </tr>
-  );
-};
-
-const Th = ({ label }) => {
-  return (
-    <th
-      scope="col"
-      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-    >
-      {label}
-    </th>
   );
 };
