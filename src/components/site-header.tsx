@@ -3,7 +3,8 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { navList } from "@/constant";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import Login from "../pages/login/Login";
 
 export function SiteHeader() {
   const location = useLocation();
@@ -33,9 +34,7 @@ export function SiteHeader() {
             size="sm"
             className="hidden sm:flex dark:text-foreground"
           >
-            <Link to={"login"} className="dark:text-foreground">
-              Login
-            </Link>
+            <Login />
           </Button>
         </div>
       </div>
