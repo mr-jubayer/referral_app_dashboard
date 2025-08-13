@@ -6,7 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Link } from "react-router";
+import { NavLink } from "react-router";
 
 export function NavMain({
   items,
@@ -23,14 +23,17 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link
+              <NavLink
                 to={item.url}
                 tooltip={item.title}
-                className="flex gap-3 mb-4"
+                className={({ isActive }) =>
+                  `${
+                    isActive ? "border-green-600 opacity-100 " : "opacity-70"
+                  } flex gap-3 mb-4 border-l-4 pl-3 transition-all duration-300`
+                }
               >
-                {item.icon && <item.icon />}
                 <span>{item.title}</span>
-              </Link>
+              </NavLink>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

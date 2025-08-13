@@ -1,4 +1,3 @@
-import { IconDashboard, IconTree } from "@tabler/icons-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
@@ -10,41 +9,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: IconDashboard,
-    },
-    {
-      title: "User List",
-      url: "/user-list",
-      icon: IconTree,
-    },
-    {
-      title: "Referral Tree View",
-      url: "/referral-tree-view",
-      icon: IconTree,
-    },
-    {
-      title: "Deposit Review & Approval",
-      url: "/deposit-review",
-      icon: IconTree,
-    },
-    {
-      title: "Withdraw Review & Approval",
-      url: "/withdraw-review",
-      icon: IconTree,
-    },
-    {
-      title: "Balance Report",
-      url: "/balance-report",
-      icon: IconTree,
-    },
-  ],
-};
+import { navList } from "@/constant";
+import logo from "../assets/logo.png";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -52,19 +18,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <span className="text-xl font-bold">App Name</span>
-              </a>
+            <SidebarMenuButton asChild>
+              <img src={logo} alt="Refero Brand Logo" className="h-12" />
             </SidebarMenuButton>
+            <div className="h-[0.9px] bg-black/10 mt-2 " />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navList} />
       </SidebarContent>
     </Sidebar>
   );
