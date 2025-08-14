@@ -26,6 +26,21 @@ const navList = [
     url: "/withdrawn",
     icon: IconTree,
   },
+  {
+    title: "Manage Game",
+    url: "/manage-game",
+    icon: IconTree,
+  },
+  {
+    title: "Bet History",
+    url: "/bet-history",
+    icon: IconTree,
+  },
+  {
+    title: "Round History",
+    url: "/round-history",
+    icon: IconTree,
+  },
 ];
 
 const token =

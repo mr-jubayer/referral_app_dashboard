@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"],
+  "include": ["src", "../backend/src/helper", "../backend/src/lib/resend.ts"],
   "baseUrl": ".",
   "paths": {
     "@/*": ["./src/*"]

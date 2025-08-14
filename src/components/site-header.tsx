@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { navList } from "@/constant";
+import { User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router";
-import Login from "../pages/login/Login";
 
 export function SiteHeader() {
   const location = useLocation();
@@ -30,11 +30,9 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant="ghost"
-            asChild
-            size="sm"
-            className="hidden sm:flex dark:text-foreground"
+            className="text-black border-[1.5px]  hover:bg-transparent h-8 w-8 rounded-full "
           >
-            <Login />
+            <User className="text-black" />
           </Button>
         </div>
       </div>

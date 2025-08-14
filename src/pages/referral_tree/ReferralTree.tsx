@@ -1,7 +1,7 @@
-import { token } from "@/constant";
 import axios from "axios";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import useAuth from "../../hooks/useAuth";
 
 interface Refer {
   _id: string;
@@ -14,6 +14,8 @@ interface Refer {
 
 function ReferralTree() {
   const [referralData, seReferralData] = useState<Refer[]>([]);
+  const { token } = useAuth();
+
   useEffect(() => {
     const getUsers = async () => {
       const response = await axios(

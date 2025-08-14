@@ -1,11 +1,12 @@
-import { token } from "@/constant";
 import axios from "axios";
 import { Check, CheckCheckIcon, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Th } from "../../components/table-item";
+import useAuth from "../../hooks/useAuth";
 
 interface DepositType {
   _id: string;
+  userId: string;
   amount: number;
   transitionId: string;
   method: string;
@@ -14,9 +15,10 @@ interface DepositType {
 
 function Deposits() {
   const [deposits, setDeposits] = useState<DepositType[]>([]);
+  const { token } = useAuth();
 
-  useEffect(() => {
-    const getDeposits = async () => {
+  const getDeposits = async () => {
+    try {
       const response = await axios(
         `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/review`,
         {
@@ -26,14 +28,35 @@ function Deposits() {
           },
         }
       );
+      setDeposits(response.data.data.deposits || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-      // console.log(response);
-
-      setDeposits(response.data.data.deposits);
-    };
-
+  useEffect(() => {
     getDeposits();
   }, []);
+
+  const handleApprove = async (transitionId: string) => {
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/approve`,
+        { transitionId },
+        {
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Refresh deposits after approval
+      getDeposits();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const tableColumns = [
     "Amount",
@@ -44,23 +67,27 @@ function Deposits() {
   ];
 
   return (
-    <div className="min-h-screen  p-2">
+    <div className="min-h-screen p-2">
       <div className="bg-white shadow-sm rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {tableColumns.map((col) => {
-                  return <Th label={col} key={col} />;
-                })}
+                {tableColumns.map((col) => (
+                  <Th label={col} key={col} />
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {deposits?.map((deposit) => (
-                <Tr deposit={deposit} key={deposit._id} />
+                <Tr
+                  key={deposit._id}
+                  deposit={deposit}
+                  onApprove={handleApprove}
+                />
               ))}
             </tbody>
-          </table>{" "}
+          </table>
         </div>
       </div>
     </div>
@@ -69,27 +96,14 @@ function Deposits() {
 
 export default Deposits;
 
-const Tr = ({ deposit }: { deposit: DepositType }) => {
-  if (!deposit) {
-    return null;
-  }
-
-  const handleApprove = async (userId: string, depositId: string) => {
-    const response = await axios.patch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/approve`,
-      {
-        userId,
-        depositId,
-      },
-      {
-        headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log(response.data);
-  };
+const Tr = ({
+  deposit,
+  onApprove,
+}: {
+  deposit: DepositType;
+  onApprove: (userId: string, depositId: string) => void;
+}) => {
+  if (!deposit) return null;
 
   return (
     <tr
@@ -117,7 +131,7 @@ const Tr = ({ deposit }: { deposit: DepositType }) => {
           <div className="flex gap-6">
             <button
               className="text-green-500 text-xl cursor-pointer"
-              onClick={() => handleApprove("USER_ID", deposit._id)}
+              onClick={() => onApprove(deposit.transitionId)}
             >
               <Check size={22} />
             </button>
@@ -129,9 +143,9 @@ const Tr = ({ deposit }: { deposit: DepositType }) => {
             <button disabled className="text-green-800 text-xl">
               <CheckCheckIcon size={22} />
             </button>
-            <button className="text-red-500 text-xl cursor-pointer">
+            {/* <button className="text-red-500 text-xl cursor-pointer">
               <Trash size={18} />
-            </button>
+            </button> */}
           </div>
         )}
 

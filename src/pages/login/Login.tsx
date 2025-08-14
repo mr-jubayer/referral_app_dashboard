@@ -1,49 +1,25 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
-import { Lock, Mail, XIcon } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Input } from "../../components/ui/input";
-
-export default function Login() {
-  return (
-    <AlertDialog className="relative">
-      <AlertDialogTrigger asChild>
-        <Button variant="outline">Login</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <InputFields /> {/** mine */}
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction className="absolute top-2 right-2 cursor-pointer rounded-full h-7 w-7">
-            <XIcon />
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
+import useAuth from "../../hooks/useAuth";
 
 interface FormDataType {
   email: string;
   password: string;
 }
 
-function InputFields() {
+export default function LoginPage() {
   const [formData, setFormData] = useState<FormDataType>({
     email: "",
     password: "",
   });
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
 
-  const handleChangeData = (name: "sting", e: React.ChangeEvent) => {
+  const handleChangeData = (name: "string", e: React.ChangeEvent) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -51,23 +27,33 @@ function InputFields() {
   const handleSubmitLogin = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
-    const loginResponse = await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/login`,
-      { ...formData }
-    );
+    try {
+      const loginResponse = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/login`,
+        { ...formData }
+      );
 
-    console.log(loginResponse);
+      const data = loginResponse.data.data;
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", JSON.stringify(data.accessToken));
+
+      setUser(data.user);
+      navigate("/");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
-    <div className=" flex items-center justify-center  p-4">
-      <div className="w-full max-w-md">
+    <div className=" flex items-center justify-center  p-4 min-h-screen bg-gray-50">
+      <div className="w-full max-w-md bg-white shadow-md p-6">
         <div className="">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">
+          <h2 className="text-3xl  text-center text-gray-900 mb-2 font-semibold">
             Welcome Back!
           </h2>
           <p className="text-center text-gray-500 mb-8">
-            Please log in to continue.
+            Please log in to Manage <span className="font-medium">Refero</span>
           </p>
 
           <form onSubmit={handleSubmitLogin} className="space-y-6">
