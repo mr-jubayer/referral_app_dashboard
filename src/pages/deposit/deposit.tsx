@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { Check, CheckCheckIcon, Trash } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, CheckCheckIcon, XIcon } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Th } from "../../components/table-item";
 import useAuth from "../../hooks/useAuth";
 
@@ -14,13 +17,25 @@ interface DepositType {
 }
 
 function Deposits() {
-  const [deposits, setDeposits] = useState<DepositType[]>([]);
   const { token } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const getDeposits = async () => {
-    try {
-      const response = await axios(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/review`,
+  // ✅ Pagination state
+  const [page, setPage] = useState(1);
+  const limit = 10; // items per page
+
+  // ✅ Fetch deposits with pagination
+  const { data, isLoading, isError } = useQuery<{
+    deposits: DepositType[];
+    total: number;
+  }>({
+    queryKey: ["deposits", page],
+    queryFn: async () => {
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/v1/deposit/review?page=${page}&limit=${limit}`,
         {
           headers: {
             Authorization: token,
@@ -28,21 +43,33 @@ function Deposits() {
           },
         }
       );
-      setDeposits(response.data.data.deposits || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      return {
+        deposits: response.data.data.deposits || [],
+        total: response.data.data.total || 0,
+      };
+    },
+    retry: false,
+    onError: (err: any) => {
+      if (!err?.response?.data?.success) {
+        localStorage.clear();
+        navigate("/login");
+      }
+    },
+    keepPreviousData: true, // ✅ avoids flicker when changing pages
+  });
 
-  useEffect(() => {
-    getDeposits();
-  }, []);
-
-  const handleApprove = async (transitionId: string) => {
-    try {
-      await axios.patch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/approve`,
-        { transitionId },
+  // ✅ Mutation for updating status
+  const mutation = useMutation({
+    mutationFn: async ({
+      transitionId,
+      status,
+    }: {
+      transitionId: string;
+      status: string;
+    }) => {
+      return axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/deposit/update-status`,
+        { transitionId, status },
         {
           headers: {
             Authorization: token,
@@ -50,12 +77,20 @@ function Deposits() {
           },
         }
       );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deposits", page] });
+    },
+    onError: (err: any) => {
+      if (!err?.response?.data?.success) {
+        localStorage.clear();
+        navigate("/login");
+      }
+    },
+  });
 
-      // Refresh deposits after approval
-      getDeposits();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleChangeStatus = (transitionId: string, status: string) => {
+    mutation.mutate({ transitionId, status });
   };
 
   const tableColumns = [
@@ -65,6 +100,14 @@ function Deposits() {
     "Status",
     "Actions",
   ];
+
+  if (isLoading) return <h2 className="p-4">Loading deposits...</h2>;
+  if (isError)
+    return <h2 className="p-4 text-red-500">Failed to load deposits</h2>;
+
+  const deposits = data?.deposits || [];
+  const total = data?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="min-h-screen p-2">
@@ -83,12 +126,37 @@ function Deposits() {
                 <Tr
                   key={deposit._id}
                   deposit={deposit}
-                  onApprove={handleApprove}
+                  onStatusChange={handleChangeStatus}
                 />
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* ✅ Pagination Controls */}
+        {total > 15 && (
+          <div className="flex justify-between items-center p-4 border-t bg-gray-50">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {page} of {totalPages}
+            </span>
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -98,10 +166,10 @@ export default Deposits;
 
 const Tr = ({
   deposit,
-  onApprove,
+  onStatusChange,
 }: {
   deposit: DepositType;
-  onApprove: (userId: string, depositId: string) => void;
+  onStatusChange: (transitionId: string, status: string) => void;
 }) => {
   if (!deposit) return null;
 
@@ -111,12 +179,8 @@ const Tr = ({
       className="hover:bg-gray-50 transition duration-150 ease-in-out"
     >
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">
-              {deposit.amount}
-            </div>
-          </div>
+        <div className="text-sm font-medium text-gray-900">
+          {deposit.amount}
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
@@ -131,9 +195,15 @@ const Tr = ({
           <div className="flex gap-6">
             <button
               className="text-green-500 text-xl cursor-pointer"
-              onClick={() => onApprove(deposit.transitionId)}
+              onClick={() => onStatusChange(deposit.transitionId, "approved")}
             >
               <Check size={22} />
+            </button>
+            <button
+              className="text-red-500 text-xl cursor-pointer"
+              onClick={() => onStatusChange(deposit.transitionId, "declined")}
+            >
+              <XIcon size={22} />
             </button>
           </div>
         )}
@@ -143,17 +213,12 @@ const Tr = ({
             <button disabled className="text-green-800 text-xl">
               <CheckCheckIcon size={22} />
             </button>
-            {/* <button className="text-red-500 text-xl cursor-pointer">
-              <Trash size={18} />
-            </button> */}
           </div>
         )}
 
         {deposit.status === "declined" && (
           <div className="flex gap-6">
-            <button className="text-red-500 text-xl cursor-pointer">
-              <Trash size={18} />
-            </button>
+            <span className="text-red-500 text-sm font-semibold">Declined</span>
           </div>
         )}
       </td>

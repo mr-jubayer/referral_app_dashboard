@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
 
 interface Refer {
@@ -13,99 +15,107 @@ interface Refer {
 }
 
 function ReferralTree() {
-  const [referralData, seReferralData] = useState<Refer[]>([]);
+  const [rootUsers, setRootUsers] = useState<any[]>([]);
   const { token } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const getUsers = async () => {
-      const response = await axios(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/refer-tree`,
-        {
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json",
-          },
+    const getRootUsers = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/refer-tree/root`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setRootUsers(response.data.data.users);
+      } catch (error: any) {
+        if (!error?.response?.data?.success) {
+          localStorage.clear();
+          navigate("/login");
         }
-      );
-
-      console.log(response.data.data.referTree);
-
-      seReferralData(response.data.data.referTree);
+      }
     };
-
-    getUsers();
+    getRootUsers();
   }, []);
 
-  if (!referralData.length) {
-    return <h2>Loading...</h2>;
-  }
+  if (!rootUsers.length) return <h2>Loading...</h2>;
 
   return (
     <div className="p-2 font-sans">
-      <div className=" rounded-md shadow-sm p-6">
-        <div className="space-y-2">
-          {referralData.map((item, index) => (
-            <ReferralItem key={index} item={item} />
-          ))}
-        </div>
+      <div className="rounded-md shadow-sm p-6 space-y-2">
+        {rootUsers.map((user, i) => (
+          <ReferralItem key={i} item={user} />
+        ))}
       </div>
     </div>
   );
 }
+
 export default ReferralTree;
 
-// Recursive component to render each node and its children
-const ReferralItem = ({ item, level = 0 }: { item: Refer; level: number }) => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+const ReferralItem = ({ item, level = 0 }: { item: any; level: number }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [children, setChildren] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { token } = useAuth();
 
-  // Function to toggle the expanded state
-  const toggleExpand = () => {
+  const toggleExpand = async () => {
+    if (!item.hasChildren) return; // ✅ do nothing if no children
+
+    if (!isExpanded && children.length === 0) {
+      // fetch children only the first time
+      setIsLoading(true);
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/refer-tree/children/${
+            item.referralCode
+          }`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setChildren(res.data.data.children);
+      } catch (err) {
+        console.log("Error fetching children", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     setIsExpanded(!isExpanded);
   };
 
-  // Determine padding for indentation based on the level
   const paddingLeft = `${level * 1.5}rem`;
-
-  // Check if there are children to display the expand/collapse button
-  const hasChildren = item.referralChildren && item.referralChildren.length > 0;
 
   return (
     <div className="text-gray-800">
       <div
-        className="flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+        className={`flex items-center p-3 rounded-lg hover:bg-gray-100 ${
+          item.hasChildren ? "cursor-pointer" : ""
+        }`}
         style={{ paddingLeft }}
-        onClick={hasChildren ? toggleExpand : undefined}
+        onClick={item.hasChildren ? toggleExpand : undefined}
       >
-        {hasChildren ? (
-          <div className="flex-shrink-0 w-6">
-            {isExpanded ? (
-              <ChevronDown
-                className="text-gray-500 transition-transform duration-200"
-                size={16}
-              />
+        <div className="flex-shrink-0 w-6">
+          {item.hasChildren ? (
+            isExpanded ? (
+              <ChevronDown size={16} className="text-gray-500" />
             ) : (
-              <ChevronRight
-                className="text-gray-500 transition-transform duration-200"
-                size={16}
-              />
-            )}
-          </div>
-        ) : (
-          // Placeholder for indentation if no children exist
-          <div className="flex-shrink-0 w-6"></div>
-        )}
+              <ChevronRight size={16} className="text-gray-500" />
+            )
+          ) : null}
+        </div>
         <div className="flex-grow flex items-center space-x-4">
           <span className="font-medium text-lg">{item.username}</span>
           <span className="text-sm text-gray-500">({item.referralCode})</span>
         </div>
       </div>
 
-      {/* Recursively render children if expanded and children exist */}
-      {isExpanded && hasChildren && (
+      {isExpanded && (
         <div className="border-l-2 border-gray-300 ml-4">
-          {item.referralChildren.map((child, index) => (
-            <ReferralItem key={index} item={child} level={level + 1} />
-          ))}
+          {isLoading ? (
+            <p className="text-gray-500 ml-4">Loading...</p>
+          ) : (
+            children.map((child, i) => (
+              <ReferralItem key={i} item={child} level={level + 1} />
+            ))
+          )}
         </div>
       )}
     </div>

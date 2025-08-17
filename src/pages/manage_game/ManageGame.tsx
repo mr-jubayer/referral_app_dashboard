@@ -6,6 +6,7 @@ function ManageGame() {
   const { token } = useAuth();
   const [isGameRunning, setIsGameRunning] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  // const navigate = useNavigate();
 
   // Fetch current game status (optional, if your backend provides a status route)
   useEffect(() => {
@@ -20,6 +21,11 @@ function ManageGame() {
         setIsGameRunning(res.data.data.isRunning);
       } catch (err) {
         console.error("Error fetching game status:", err);
+
+        // if (!err?.response?.data?.success) {
+        //   localStorage.clear();
+        //   navigate("/login");
+        // }
         setIsGameRunning(false); // fallback
       }
     };

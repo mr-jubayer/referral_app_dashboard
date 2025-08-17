@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
 
 function Overview() {
@@ -10,6 +11,7 @@ function Overview() {
     totalWithdrawals: 0,
     pendingWithdrawals: 0,
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -17,13 +19,18 @@ function Overview() {
         const res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/v1/states`,
           {
-            headers: { Authorization: token },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
         setStats(res.data.data);
-        console.log(res);
+        // console.log(res);
       } catch (err) {
-        console.error(err);
+        // console.log(err?.response);
+
+        if (!err?.response?.data?.success) {
+          localStorage.clear();
+          navigate("/login");
+        }
       }
     };
     fetchStats();

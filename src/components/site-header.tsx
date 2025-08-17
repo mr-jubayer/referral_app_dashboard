@@ -2,21 +2,27 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { navList } from "@/constant";
-import { User } from "lucide-react";
+import { LogOutIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 export function SiteHeader() {
   const location = useLocation();
   const [title, setTitle] = useState("Overview");
+  const navigate = useNavigate();
 
   useEffect(() => {
     navList.forEach((item) => {
       if (item.url == location.pathname) {
-        setTitle(item.title); // current path label
+        setTitle(item.title);
       }
     });
   }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -30,9 +36,10 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant="ghost"
-            className="text-black border-[1.5px]  hover:bg-transparent h-8 w-8 rounded-full "
+            className="text-black font-bold  hover:bg-transparent h-8 w-8 rounded-full  cursor-pointer"
+            onClick={handleLogout}
           >
-            <User className="text-black" />
+            <LogOutIcon className="text-black" />
           </Button>
         </div>
       </div>

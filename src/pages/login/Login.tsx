@@ -17,7 +17,7 @@ export default function LoginPage() {
     password: "",
   });
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, setToken } = useAuth();
 
   const handleChangeData = (name: "string", e: React.ChangeEvent) => {
     const value = e.target.value;
@@ -39,6 +39,8 @@ export default function LoginPage() {
       localStorage.setItem("token", JSON.stringify(data.accessToken));
 
       setUser(data.user);
+      setToken(data.accessToken);
+
       navigate("/");
     } catch (error) {
       console.log(error);

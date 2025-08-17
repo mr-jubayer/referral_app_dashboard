@@ -1,12 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { Check, CheckCheckIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, CheckCheckIcon, XIcon } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Th } from "../../components/table-item";
 import useAuth from "../../hooks/useAuth";
 
 interface WithdrawType {
   _id: string;
-  userId: string; // Make sure backend sends this
+  userId: string;
   amount: number;
   phone: string;
   method: string;
@@ -14,13 +17,25 @@ interface WithdrawType {
 }
 
 function Withdrawn() {
-  const [withdrawn, setWithdrawn] = useState<WithdrawType[]>([]);
   const { token } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const getWithdrawn = async () => {
-    try {
-      const response = await axios(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/review`,
+  // ✅ Pagination state
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  // ✅ Fetch withdrawn with pagination
+  const { data, isLoading, isError } = useQuery<{
+    withdrawn: WithdrawType[];
+    total: number;
+  }>({
+    queryKey: ["withdrawn", page],
+    queryFn: async () => {
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/v1/withdraw/review?page=${page}&limit=${limit}`,
         {
           headers: {
             Authorization: token,
@@ -28,21 +43,35 @@ function Withdrawn() {
           },
         }
       );
-      setWithdrawn(response.data.data.withdrawn || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      return {
+        withdrawn: response.data.data.withdrawn || [],
+        total: response.data.data.total || 0,
+      };
+    },
+    retry: false,
+    onError: (err: any) => {
+      if (!err?.response?.data?.success) {
+        localStorage.clear();
+        navigate("/login");
+      }
+    },
+    keepPreviousData: true,
+  });
 
-  useEffect(() => {
-    getWithdrawn();
-  }, []);
-
-  const handleApprove = async (userId: string, withdrawId: string) => {
-    try {
-      await axios.patch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/approve`,
-        { userId, withdrawId },
+  // ✅ Mutation for approving withdraw
+  const mutation = useMutation({
+    mutationFn: async ({
+      userId,
+      withdrawId,
+      status,
+    }: {
+      userId: string;
+      withdrawId: string;
+      status: string;
+    }) => {
+      return axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/withdraw/update-status`,
+        { userId, withdrawId, status },
         {
           headers: {
             Authorization: token,
@@ -50,13 +79,29 @@ function Withdrawn() {
           },
         }
       );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["withdrawn", page] });
+    },
+    onError: (err: any) => {
+      if (!err?.response?.data?.success) {
+        localStorage.clear();
+        navigate("/login");
+      }
+    },
+  });
 
-      // Refresh list after approval
-      getWithdrawn();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleChangeStatus = (userId: string, withdrawId: string, status) => {
+    mutation.mutate({ userId, withdrawId, status });
   };
+
+  if (isLoading) return <h2 className="p-4">Loading withdrawn...</h2>;
+  if (isError)
+    return <h2 className="p-4 text-red-500">Failed to load withdrawn</h2>;
+
+  const withdrawn = data?.withdrawn || [];
+  const total = data?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   const tableColumns = ["Amount", "Phone", "Method", "Status", "Actions"];
 
@@ -77,12 +122,37 @@ function Withdrawn() {
                 <Tr
                   key={withdraw._id}
                   withdraw={withdraw}
-                  onApprove={handleApprove}
+                  onStatusChange={handleChangeStatus}
                 />
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* ✅ Pagination Controls if total > 15 */}
+        {total > 15 && (
+          <div className="flex justify-between items-center p-4 border-t bg-gray-50">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {page} of {totalPages}
+            </span>
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -92,63 +162,50 @@ export default Withdrawn;
 
 const Tr = ({
   withdraw,
-  onApprove,
+  onStatusChange,
 }: {
   withdraw: WithdrawType;
-  onApprove: (userId: string, withdrawId: string) => void;
+  onStatusChange: (userId: string, withdrawId: string) => void;
 }) => {
   if (!withdraw) return null;
 
   return (
-    <tr
-      key={withdraw._id}
-      className="hover:bg-gray-50 transition duration-150 ease-in-out"
-    >
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">
-              {withdraw.amount}
-            </div>
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{withdraw.phone}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{withdraw.method}</div>
-      </td>
+    <tr className="hover:bg-gray-50 transition duration-150 ease-in-out">
+      <td className="px-6 py-4 whitespace-nowrap">{withdraw.amount}</td>
+      <td className="px-6 py-4 whitespace-nowrap">{withdraw.phone}</td>
+      <td className="px-6 py-4 whitespace-nowrap">{withdraw.method}</td>
       <td className="px-6 py-4 whitespace-nowrap">{withdraw.status}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
         {withdraw.status === "pending" && (
           <div className="flex gap-6">
             <button
               className="text-green-500 text-xl cursor-pointer"
-              onClick={() => onApprove(withdraw.userId, withdraw._id)}
+              onClick={() =>
+                onStatusChange(withdraw.userId, withdraw._id, "approved")
+              }
             >
               <Check size={22} />
+            </button>
+
+            <button
+              className="text-red-500 text-xl cursor-pointer"
+              onClick={() =>
+                onStatusChange(withdraw.userId, withdraw._id, "declined")
+              }
+            >
+              <XIcon size={22} />
             </button>
           </div>
         )}
 
         {withdraw.status === "approved" && (
-          <div className="flex gap-6">
-            <button disabled className="text-green-800 text-xl">
-              <CheckCheckIcon size={22} />
-            </button>
-            {/* <button className="text-red-500 text-xl cursor-pointer">
-              <Trash size={18} />
-            </button> */}
-          </div>
+          <button disabled className="text-green-800 text-xl">
+            <CheckCheckIcon size={22} />
+          </button>
         )}
 
         {withdraw.status === "declined" && (
-          <div className="flex gap-6">
-            {/* <button className="text-red-500 text-xl cursor-pointer">
-              <Trash size={18} />
-            </button> */}
-          </div>
+          <span className="text-red-500 text-sm font-semibold">Declined</span>
         )}
       </td>
     </tr>

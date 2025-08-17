@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
 import SearchBox from "./components/SearchBox";
 import Table from "./components/Table";
@@ -17,7 +19,8 @@ async function fetchUsers(
   search: string,
   page: number,
   limit: number,
-  token: string
+  token: string,
+  navigate: any
 ) {
   try {
     const res = await axios.get(
@@ -37,7 +40,10 @@ async function fetchUsers(
       totalPages: res.data?.data?.totalPages || 1,
     };
   } catch (error) {
-    console.error(error);
+    if (!error?.response?.data?.success) {
+      localStorage.clear();
+      navigate("/login");
+    }
     return { users: [], totalPages: 1 };
   }
 }
@@ -47,7 +53,9 @@ export default function ManageUsers() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const { token } = useAuth();
-  const limit = 5;
+  const limit = 10;
+
+  const navigate = useNavigate();
 
   // Debounce search input
   useEffect(() => {
@@ -61,7 +69,7 @@ export default function ManageUsers() {
 
   const { data = { users: [], totalPages: 1 }, isError } = useQuery({
     queryKey: ["users", debouncedSearch, page],
-    queryFn: () => fetchUsers(debouncedSearch, page, limit, token),
+    queryFn: () => fetchUsers(debouncedSearch, page, limit, token, navigate),
     keepPreviousData: true,
   });
 
