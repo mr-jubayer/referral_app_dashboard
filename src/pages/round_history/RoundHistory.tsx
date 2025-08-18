@@ -16,25 +16,36 @@ interface RoundType {
 function RoundHistory() {
   const { token } = useAuth();
   const [rounds, setRounds] = useState<RoundType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
+  const fetchRounds = async (pageNumber: number) => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/game/round-history`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page: pageNumber, pageSize },
+        }
+      );
+
+      setRounds(res.data.data.rounds);
+      setTotalPages(res.data.data.totalPages);
+    } catch (err) {
+      console.error("Error fetching round history:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRounds = async () => {
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/game/rounds`,
-          { headers: { Authorization: token } }
-        );
-
-        setRounds(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRounds();
-  }, [token]);
+    fetchRounds(page);
+  }, [page, token]);
 
   const tableColumns = [
     "Round ID",
@@ -44,8 +55,10 @@ function RoundHistory() {
     "Ended At",
   ];
 
-  if (loading) return <p className="p-4">Loading round history...</p>;
+  const handlePrev = () => setPage((prev) => Math.max(prev - 1, 1));
+  const handleNext = () => setPage((prev) => Math.min(prev + 1, totalPages));
 
+  if (loading) return <p className="p-4">Loading round history...</p>;
   if (!rounds || rounds.length === 0)
     return <p className="p-4 text-gray-500 text-center">No rounds found.</p>;
 
@@ -90,6 +103,27 @@ function RoundHistory() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between p-4">
+          <button
+            onClick={handlePrev}
+            disabled={page === 1}
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={handleNext}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

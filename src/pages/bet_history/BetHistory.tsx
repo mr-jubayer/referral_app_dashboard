@@ -3,13 +3,15 @@ import { useEffect, useState } from "react";
 import { Th } from "../../components/table-item";
 import useAuth from "../../hooks/useAuth";
 
+interface UserType {
+  _id: string;
+  username: string;
+}
+
 interface BetType {
   _id: string;
   roundId: number;
-  userId: {
-    _id: string;
-    username: string;
-  };
+  userId: UserType | null;
   amount: number;
   team: "red" | "green";
   type: "demo" | "real";
@@ -19,26 +21,36 @@ interface BetType {
 function BetHistory() {
   const { token } = useAuth();
   const [bets, setBets] = useState<BetType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
+  const fetchBets = async (pageNumber: number) => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/game/bet-history`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page: pageNumber, pageSize },
+        }
+      );
+
+      setBets(res.data.data.bets);
+      setTotalPages(res.data.data.totalPages);
+    } catch (err) {
+      console.error("Error fetching bet history:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBets = async () => {
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/game/bets`,
-          {
-            headers: { Authorization: token },
-          }
-        );
-        setBets(res.data.data.bets);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBets();
-  }, [token]);
+    fetchBets(page);
+  }, [page, token]);
 
   const tableColumns = [
     "Round ID",
@@ -49,8 +61,10 @@ function BetHistory() {
     "Created At",
   ];
 
-  if (loading) return <p className="p-4">Loading bet history...</p>;
+  const handlePrev = () => setPage((prev) => Math.max(prev - 1, 1));
+  const handleNext = () => setPage((prev) => Math.min(prev + 1, totalPages));
 
+  if (loading) return <p className="p-4">Loading bet history...</p>;
   if (!bets || bets.length === 0)
     return <p className="p-4 text-gray-500 text-center">No bets found.</p>;
 
@@ -74,7 +88,7 @@ function BetHistory() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">{bet.roundId}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {bet.userId?.username || "Unknown"}
+                    {bet.userId?.username ?? "Unknown"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">{bet.amount}</td>
                   <td className="px-6 py-4 whitespace-nowrap capitalize">
@@ -90,6 +104,27 @@ function BetHistory() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between p-4">
+          <button
+            onClick={handlePrev}
+            disabled={page === 1}
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={handleNext}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

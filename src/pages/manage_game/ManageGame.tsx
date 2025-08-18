@@ -8,17 +8,17 @@ function ManageGame() {
   const [loading, setLoading] = useState(false);
   // const navigate = useNavigate();
 
-  // Fetch current game status (optional, if your backend provides a status route)
   useEffect(() => {
     const fetchGameStatus = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/status`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/game/status`,
           {
             headers: { Authorization: token },
           }
         );
-        setIsGameRunning(res.data.data.isRunning);
+
+        setIsGameRunning(res.data.data.status.isGameRunning);
       } catch (err) {
         console.error("Error fetching game status:", err);
 
@@ -26,7 +26,7 @@ function ManageGame() {
         //   localStorage.clear();
         //   navigate("/login");
         // }
-        setIsGameRunning(false); // fallback
+        setIsGameRunning(false);
       }
     };
     fetchGameStatus();
@@ -36,15 +36,16 @@ function ManageGame() {
   const toggleGame = async () => {
     setLoading(true);
     try {
-      const endpoint = isGameRunning ? "stop" : "start"; // choose route
+      const endpoint = isGameRunning ? "stop" : "start";
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/${endpoint}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/game/${endpoint}`,
         {},
         {
           headers: { Authorization: token },
         }
       );
-      setIsGameRunning(res.data.data.isRunning); // assume backend returns { isRunning: boolean }
+
+      setIsGameRunning(res.data.status.isGameRunning);
     } catch (err) {
       console.error("Error updating game state:", err);
     } finally {
@@ -57,10 +58,9 @@ function ManageGame() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">Manage Game</h2>
+    <div className="p-4 space-y-4 flex justify-center items-center flex-col">
       <p>
-        Current Status:{" "}
+        Current Status:{"   "}
         <span className={isGameRunning ? "text-green-600" : "text-red-600"}>
           {isGameRunning ? "Running" : "Stopped"}
         </span>
