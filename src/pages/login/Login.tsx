@@ -29,7 +29,7 @@ export default function LoginPage() {
 
     try {
       const loginResponse = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/users/login`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth/login`,
         { ...formData }
       );
 

@@ -25,7 +25,7 @@ function Overview() {
         setStats(res.data.data);
         // console.log(res);
       } catch (err) {
-        // console.log(err?.response);
+        console.log(err?.response);
 
         if (!err?.response?.data?.success) {
           localStorage.clear();

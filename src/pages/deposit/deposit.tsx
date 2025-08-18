@@ -82,9 +82,11 @@ function Deposits() {
       queryClient.invalidateQueries({ queryKey: ["deposits", page] });
     },
     onError: (err: any) => {
+      console.log(err?.response);
+
       if (!err?.response?.data?.success) {
         localStorage.clear();
-        navigate("/login");
+        // navigate("/login");
       }
     },
   });
